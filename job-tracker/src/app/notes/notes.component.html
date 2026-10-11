@@ -1,0 +1,67 @@
+<div class="notes">
+  <div class="notes-window">
+    <aside class="notes-sidebar" aria-label="Your notes">
+      <header class="notes-sidebar-head">
+        <div>
+          <h1>Notes</h1>
+          <p>{{ count() }} {{ count() === 1 ? 'note' : 'notes' }}</p>
+        </div>
+        <button type="button" class="notes-icon-btn notes-compose" aria-label="New note" title="New note" (click)="create()">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.4 2.6a2.1 2.1 0 1 1 3 3L12 15l-4 1 1-4Z" />
+          </svg>
+        </button>
+      </header>
+
+      <label class="notes-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM21 21l-4.3-4.3" /></svg>
+        <input type="search" placeholder="Search" aria-label="Search notes" [value]="query()" (input)="query.set($any($event.target).value)" />
+      </label>
+
+      <nav class="notes-list">
+        @for (group of groups(); track group.label) {
+          <section class="notes-section" animate.enter="notes-fade-in" animate.leave="notes-fade-out">
+            <h2 class="notes-group">{{ group.label }}</h2>
+            <ul>
+              @for (item of group.items; track item.id; let i = $index) {
+                <!-- Rows grow in and collapse out, so neighbours glide instead of jumping. -->
+                <li [style.--i]="i" animate.enter="note-row-in" animate.leave="note-row-out">
+                  <button
+                    type="button"
+                    class="note-row"
+                    [attr.aria-current]="item.id === notes.active().id ? 'true' : null"
+                    (click)="notes.open(item.id)"
+                  >
+                    <span class="note-title">{{ item.title }}</span>
+                    <span class="note-meta">
+                      <span class="note-date">{{ item.updatedAt | date: (item.isToday ? 'h:mm a' : 'M/d/yy') }}</span>
+                      <span class="note-preview">{{ item.preview || 'No additional text' }}</span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          </section>
+        } @empty {
+          <p class="notes-empty" animate.enter="notes-fade-in">No results for “{{ query() }}”</p>
+        }
+      </nav>
+
+      <p class="notes-storage">Saved in this browser only</p>
+    </aside>
+
+    <section class="notes-sheet" aria-label="Note">
+      <!-- Keyed by note id, so switching notes gives a fresh editor instead of carrying over its selection and undo history. -->
+      @for (note of [notes.active()]; track note.id) {
+        <app-rich-text-editor animate.enter="notes-sheet-in" label="Note" placeholder="Start typing…" [showCount]="false" [value]="note.html" (valueChange)="notes.update(note.id, $event)">
+          <button rteActions type="button" class="rte-btn notes-delete" aria-label="Delete note" title="Delete note" (click)="remove()">
+            <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+            </svg>
+          </button>
+          <p rteHeader class="notes-stamp">{{ note.updatedAt | date: "MMMM d, y 'at' h:mm a" }}</p>
+        </app-rich-text-editor>
+      }
+    </section>
+  </div>
+</div>

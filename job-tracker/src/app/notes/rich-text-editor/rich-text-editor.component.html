@@ -1,0 +1,94 @@
+<div class="rte-toolbar" role="toolbar" [attr.aria-label]="label() + ' formatting'" (mousedown)="keepSelection($event)">
+  <!-- An "Aa" button over a transparent native select: the platform menu opens, and it stays keyboard and screen-reader friendly. -->
+  <label class="rte-btn rte-style" [title]="'Text style: ' + blockLabel()">
+    <span aria-hidden="true">Aa</span>
+    <select aria-label="Text style" (change)="setBlock($any($event.target).value)">
+      @for (b of blocks; track b.value) {
+        <option [value]="b.value" [selected]="block() === b.value">{{ b.label }}</option>
+      }
+    </select>
+  </label>
+
+  <span class="rte-sep" aria-hidden="true"></span>
+
+  <div class="rte-group">
+    @for (m of marks; track m.command) {
+      <button
+        type="button"
+        class="rte-btn rte-mark"
+        [attr.data-mark]="m.command"
+        [attr.aria-label]="m.label"
+        [title]="m.label"
+        [attr.aria-pressed]="!!pressed()[m.command]"
+        (click)="toggle(m.command)"
+      >{{ m.glyph }}</button>
+    }
+  </div>
+
+  <span class="rte-sep" aria-hidden="true"></span>
+
+  <div class="rte-group">
+    @for (l of lists; track l.command) {
+      <button
+        type="button"
+        class="rte-btn"
+        [attr.aria-label]="l.label"
+        [title]="l.label"
+        [attr.aria-pressed]="!!pressed()[l.command]"
+        (click)="toggle(l.command)"
+      >
+        <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="l.icon" /></svg>
+      </button>
+    }
+  </div>
+
+  <span class="rte-sep" aria-hidden="true"></span>
+
+  <div class="rte-group">
+    <button type="button" class="rte-btn" [attr.aria-label]="linkLabel" [title]="linkLabel" [attr.aria-pressed]="inLink()" (click)="editLink()">
+      <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.link" /></svg>
+    </button>
+    <button type="button" class="rte-btn" aria-label="Clear formatting" title="Clear formatting" (click)="exec('removeFormat')">
+      <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.clear" /></svg>
+    </button>
+  </div>
+
+  <div class="rte-group rte-history">
+    <button type="button" class="rte-btn" [attr.aria-label]="undoLabel" [title]="undoLabel" (click)="exec('undo')">
+      <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.undo" /></svg>
+    </button>
+    <button type="button" class="rte-btn" [attr.aria-label]="redoLabel" [title]="redoLabel" (click)="exec('redo')">
+      <svg class="rte-icon" viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="icons.redo" /></svg>
+    </button>
+  </div>
+
+  <!-- Host-specific actions (e.g. delete) sit at the end of the toolbar. -->
+  <ng-content select="[rteActions]" />
+</div>
+
+<div class="rte-scroll">
+  <!-- Optional header that scrolls with the document, such as a timestamp. -->
+  <ng-content select="[rteHeader]" />
+  <div
+    #content
+    class="rte-content"
+    contenteditable="true"
+    role="textbox"
+    aria-multiline="true"
+    spellcheck="true"
+    [attr.aria-label]="label()"
+    [attr.data-placeholder]="placeholder()"
+    [class.is-empty]="isEmpty()"
+    (focus)="onFocus()"
+    (input)="onInput()"
+    (keydown)="onKeydown($event)"
+    (paste)="onPaste($event)"
+  ></div>
+</div>
+
+@if (showCount()) {
+  <p class="rte-foot">
+    <span>{{ words() }} {{ words() === 1 ? 'word' : 'words' }}</span>
+    <span>{{ characters() }} {{ characters() === 1 ? 'character' : 'characters' }}</span>
+  </p>
+}

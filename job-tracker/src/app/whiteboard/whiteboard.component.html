@@ -1,0 +1,103 @@
+<div class="wrap wb">
+  <header class="wb-head">
+    <div>
+      <h1>Whiteboard</h1>
+      <p class="wb-status" [attr.data-status]="sync.status()" role="status">
+        @switch (sync.status()) {
+          @case ('live') {
+            Live in room {{ room() }}
+          }
+          @case ('connecting') {
+            Connecting to room {{ room() }}…
+          }
+          @case ('offline') {
+            Offline. You can keep drawing; changes sync when the connection is back.
+          }
+        }
+      </p>
+    </div>
+
+    <div class="wb-people">
+      <ul class="avatars" aria-label="People in this room">
+        <li class="avatar" [style.background]="profile().color" [title]="profile().name + ' (you)'">
+          {{ initials(profile().name) }}
+        </li>
+        @for (peer of sync.peers(); track peer.id) {
+          <li class="avatar" [style.background]="peer.color" [title]="peer.name">{{ initials(peer.name) }}</li>
+        }
+      </ul>
+      <label class="wb-name">
+        <span>Your name</span>
+        <input #nameInput [value]="profile().name" maxlength="24" (change)="rename(nameInput.value)" />
+      </label>
+      <button type="button" class="primary" (click)="copyLink()">{{ copied() ? 'Link copied' : 'Copy invite link' }}</button>
+    </div>
+  </header>
+
+  <div class="wb-toolbar" role="toolbar" aria-label="Drawing tools">
+    <div class="tool-group">
+      <button type="button" class="tool" [attr.aria-pressed]="tool() === 'pen'" (click)="tool.set('pen')" title="Pen (P)">Pen</button>
+      <button type="button" class="tool" [attr.aria-pressed]="tool() === 'eraser'" (click)="tool.set('eraser')" title="Eraser (E)">Eraser</button>
+    </div>
+
+    <div class="tool-group" aria-label="Color">
+      @for (c of colors; track c.value) {
+        <button
+          type="button"
+          class="swatch"
+          [style.background]="c.value"
+          [attr.aria-label]="c.label"
+          [attr.aria-pressed]="tool() === 'pen' && color() === c.value"
+          (click)="pickColor(c.value)"
+        ></button>
+      }
+    </div>
+
+    <div class="tool-group" aria-label="Line width">
+      @for (s of sizes; track s.value) {
+        <button
+          type="button"
+          class="size"
+          [attr.aria-label]="s.label"
+          [attr.aria-pressed]="size() === s.value"
+          (click)="size.set(s.value)"
+        >
+          <span [style.width.px]="s.value + 2" [style.height.px]="s.value + 2"></span>
+        </button>
+      }
+    </div>
+
+    <div class="tool-group tool-actions">
+      <button type="button" class="secondary" [disabled]="!canUndo()" (click)="sync.undo()" title="Undo your last stroke (Ctrl/Cmd+Z)">Undo</button>
+      <button type="button" class="secondary" [disabled]="isEmpty()" (click)="download()">Download PNG</button>
+      <button type="button" class="danger" [disabled]="isEmpty()" (click)="clear()">Clear board</button>
+    </div>
+  </div>
+
+  <div class="board-frame">
+    <canvas
+      #canvas
+      class="wb-canvas"
+      [attr.data-tool]="tool()"
+      aria-label="Shared drawing board"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp()"
+      (pointercancel)="onPointerUp()"
+      (pointerleave)="onPointerLeave()"
+    ></canvas>
+
+    @if (isEmpty()) {
+      <p class="board-empty">Draw anywhere. Share the invite link and others will see it as you draw.</p>
+    }
+
+    @for (peer of visibleCursors(); track peer.id) {
+      <div class="cursor" [style.left.%]="cursorLeft(peer.cursor!.x)" [style.top.%]="cursorTop(peer.cursor!.y)" [style.color]="peer.color">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <path d="M2 1.5 16 8.2l-6.1 1.6L7 16z" fill="currentColor" stroke="#fff" stroke-width="1.5" stroke-linejoin="round" />
+        </svg>
+        <span class="cursor-name" [style.background]="peer.color">{{ peer.name }}</span>
+      </div>
+    }
+  </div>
+</div>

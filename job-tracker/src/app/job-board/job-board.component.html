@@ -1,0 +1,125 @@
+<header class="top wrap">
+  <div class="title-row">
+    <div>
+      <h1>Job search</h1>
+      @if (applications.all().length) {
+        <p class="subtitle">
+          {{ applications.all().length }} applications, {{ inProgress() }} waiting to hear back
+        </p>
+      }
+    </div>
+    <div class="toolbar">
+      <input
+        type="search"
+        class="search"
+        placeholder="Search"
+        aria-label="Search applications"
+        [value]="query()"
+        (input)="query.set($any($event.target).value)"
+      />
+      <button type="button" class="primary" (click)="addTo()">Add application</button>
+    </div>
+  </div>
+
+  @if (pipeline().length) {
+    <ol class="pipeline" aria-label="Applications by stage">
+      @for (s of pipeline(); track s.id) {
+        <li class="segment" [attr.data-stage]="s.id" [title]="s.count + ' ' + s.label" [style.flex-grow]="s.count">
+          <span class="segment-count">{{ s.count }}</span>
+          <span class="segment-label">{{ s.label }}</span>
+        </li>
+      }
+    </ol>
+  }
+</header>
+
+<main class="wrap">
+  @if (applications.dueFollowUps().length) {
+    <section class="followups" aria-labelledby="followups-heading">
+      <h2 id="followups-heading">Follow up</h2>
+      <ul>
+        @for (app of applications.dueFollowUps(); track app.id) {
+          <li class="followup">
+            <button type="button" class="followup-name" (click)="open(app)">
+              {{ app.role }} at {{ app.company }}
+            </button>
+            <span class="followup-when" [attr.data-status]="followUpClass(app)">{{ followUpLabel(app) }}</span>
+            <span class="followup-actions">
+              <button type="button" class="secondary small" (click)="applications.completeFollowUp(app.id)">Done</button>
+              <button type="button" class="secondary small" (click)="applications.snoozeFollowUp(app.id)">Snooze a week</button>
+            </span>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (!applications.all().length) {
+    <section class="intro">
+      <h2>Keep every application in one place</h2>
+      <p>
+        Add the jobs you're eyeing, drag them across the board as things move, and get a nudge when it's time to
+        follow up.
+      </p>
+      <div class="intro-actions">
+        <button type="button" class="primary" (click)="addTo()">Add your first application</button>
+        <button type="button" class="secondary" (click)="applications.loadSample()">Try with sample data</button>
+      </div>
+    </section>
+  }
+
+  <div class="board" cdkDropListGroup>
+    @for (s of stages; track s.id) {
+      <section class="column" [attr.data-stage]="s.id" [attr.aria-labelledby]="'col-' + s.id">
+        <header class="column-head">
+          <h2 [id]="'col-' + s.id">{{ s.label }}</h2>
+          <span class="column-count">{{ columns().get(s.id)!.length }}</span>
+          <button type="button" class="icon-button" [attr.aria-label]="'Add to ' + s.label" (click)="addTo(s.id)">+</button>
+        </header>
+
+        <div class="cards" cdkDropList [cdkDropListData]="s.id" (cdkDropListDropped)="drop($event)">
+          @for (app of columns().get(s.id); track app.id) {
+            <article class="card" cdkDrag [cdkDragData]="app.id" (cdkDragEnded)="dragEnded()">
+              <button type="button" class="card-open" (click)="open(app)">
+                <span class="card-role">{{ app.role }}</span>
+                <span class="card-company">{{ app.company }}</span>
+              </button>
+              <p class="card-meta">
+                <span>{{ appliedLabel(app) }}</span>
+                @if (app.location) {
+                  <span>{{ app.location }}</span>
+                }
+                @if (app.salary) {
+                  <span>{{ app.salary }}</span>
+                }
+              </p>
+              @if (followUpLabel(app); as label) {
+                <p class="badge" [attr.data-status]="followUpClass(app)">{{ label }}</p>
+              }
+              @if (app.url) {
+                <a class="card-link" [href]="app.url" target="_blank" rel="noopener">View posting</a>
+              }
+            </article>
+          } @empty {
+            <p class="column-empty">
+              @if (query()) {
+                No matches
+              } @else {
+                Drag a card here
+              }
+            </p>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</main>
+
+<footer class="wrap footer">
+  <p>Saved in this browser only.</p>
+  @if (applications.all().length) {
+    <button type="button" class="link" (click)="clearAll()">Delete all applications</button>
+  }
+</footer>
+
+<app-application-editor />

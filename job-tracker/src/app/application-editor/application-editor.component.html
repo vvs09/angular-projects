@@ -1,0 +1,78 @@
+<dialog #dialog class="editor" aria-labelledby="editor-title">
+  <form (ngSubmit)="save()" novalidate>
+    <header class="editor-head">
+      <h2 id="editor-title">{{ editingId() ? 'Edit application' : 'Add application' }}</h2>
+      <button type="button" class="icon-button" aria-label="Close" (click)="close()">×</button>
+    </header>
+
+    <div class="editor-body">
+      <div class="field-pair">
+        <label class="field">
+          <span>Company</span>
+          <input name="company" autofocus [(ngModel)]="draft.company" maxlength="80" autocomplete="off" placeholder="Acme Corp" />
+        </label>
+        <label class="field">
+          <span>Role</span>
+          <input name="role" [(ngModel)]="draft.role" maxlength="80" autocomplete="off" placeholder="Frontend Engineer" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Stage</span>
+        <select name="stage" [(ngModel)]="draft.stage">
+          @for (s of stages; track s.id) {
+            <option [value]="s.id">{{ s.label }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="field-pair">
+        <label class="field">
+          <span>Location</span>
+          <input name="location" [(ngModel)]="draft.location" maxlength="60" placeholder="Remote" />
+        </label>
+        <label class="field">
+          <span>Salary</span>
+          <input name="salary" [(ngModel)]="draft.salary" maxlength="40" placeholder="₹30 LPA" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Job posting link</span>
+        <input name="url" type="url" [(ngModel)]="draft.url" placeholder="https://" />
+      </label>
+
+      <div class="field-pair">
+        <label class="field">
+          <span>Applied on</span>
+          <input name="appliedOn" type="date" [(ngModel)]="draft.appliedOn" />
+        </label>
+        <label class="field">
+          <span>Follow up on</span>
+          <input name="followUpOn" type="date" [(ngModel)]="draft.followUpOn" />
+        </label>
+      </div>
+      @if (!editingId() && draft.stage === 'applied' && !draft.followUpOn) {
+        <p class="hint">A follow-up reminder is set for a week after you apply. Change it here if you like.</p>
+      }
+
+      <label class="field">
+        <span>Notes</span>
+        <textarea name="notes" rows="4" [(ngModel)]="draft.notes" placeholder="Recruiter name, interview prep, referral…"></textarea>
+      </label>
+
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+    </div>
+
+    <footer class="editor-foot">
+      @if (editingId()) {
+        <button type="button" class="danger" (click)="remove()">Delete</button>
+      }
+      <span class="spacer"></span>
+      <button type="button" class="secondary" (click)="close()">Cancel</button>
+      <button type="submit" class="primary">{{ editingId() ? 'Save changes' : 'Add application' }}</button>
+    </footer>
+  </form>
+</dialog>

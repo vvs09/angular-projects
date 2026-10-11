@@ -1,0 +1,140 @@
+<div class="splitter">
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <div>
+      <input
+        class="group-name"
+        aria-label="Group name"
+        maxlength="60"
+        [ngModel]="ledger.groupName()"
+        (ngModelChange)="ledger.rename($event)"
+      />
+      @if (ledger.totalSpent() > 0) {
+        <p class="summary">
+          {{ ledger.totalSpent() | money: ledger.currency() }} spent by {{ ledger.people().length }} people
+        </p>
+      }
+    </div>
+    <label class="currency">
+      <span>Currency</span>
+      <select [ngModel]="ledger.currency()" (ngModelChange)="ledger.setCurrency($event)">
+        @for (c of currencies; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+    </label>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <div class="split-column">
+    <section class="panel">
+      <h2>People</h2>
+      @if (ledger.people().length === 0) {
+        <p class="hint">Add everyone who's sharing costs, or try it out with a sample trip.</p>
+        <button type="button" class="quiet" (click)="ledger.loadSample()">Load sample trip</button>
+      } @else {
+        <ul class="people">
+          @for (p of ledger.people(); track p.id) {
+            <li class="person">
+              <span>{{ p.name }}</span>
+              @if (!ledger.isInvolved(p.id)) {
+                <button type="button" class="remove" [attr.aria-label]="'Remove ' + p.name" (click)="ledger.removePerson(p.id)">×</button>
+              }
+            </li>
+          }
+        </ul>
+      }
+      <form class="add-person" (ngSubmit)="addPerson()">
+        <input name="newPerson" [(ngModel)]="newPerson" placeholder="Name" aria-label="New person's name" maxlength="30" />
+        <button type="submit" [disabled]="!newPerson.trim()">Add person</button>
+      </form>
+    </section>
+
+    <app-expense-form />
+  </div>
+
+  <div class="split-column">
+    <section class="settle" aria-labelledby="settle-heading">
+      <h2 id="settle-heading">Settle up</h2>
+      @if (ledger.transfers().length) {
+        <ol class="transfers">
+          @for (t of ledger.transfers(); track t.from + t.to) {
+            <li class="transfer">
+              <p class="transfer-text">
+                {{ ledger.nameOf(t.from) }} pays {{ ledger.nameOf(t.to) }}
+                <strong>{{ t.amount | money: ledger.currency() }}</strong>
+              </p>
+              <button type="button" class="ink" (click)="ledger.recordPayment(t)">Mark as paid</button>
+            </li>
+          }
+        </ol>
+      } @else if (ledger.entries().length) {
+        <p class="settled">Everyone is square.</p>
+      } @else {
+        <p class="settled-hint">Add an expense and the fewest payments needed to even things out will show here.</p>
+      }
+    </section>
+
+    @if (ledger.people().length) {
+      <section class="panel">
+        <h2>Balances</h2>
+        <ul class="balances">
+          @for (row of balanceRows(); track row.id) {
+            <li class="balance-row">
+              <span class="balance-name">{{ row.name }}</span>
+              <span class="track" aria-hidden="true">
+                <span
+                  class="bar"
+                  [class.owes]="row.amount < 0"
+                  [class.owed]="row.amount > 0"
+                  [style.width.%]="row.width / 2"
+                ></span>
+              </span>
+              <span class="balance-amount" [class.owes]="row.amount < 0" [class.owed]="row.amount > 0">
+                @if (row.amount > 0) {
+                  gets back {{ row.amount | money: ledger.currency() }}
+                } @else if (row.amount < 0) {
+                  owes {{ -row.amount | money: ledger.currency() }}
+                } @else {
+                  settled
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (activity().length) {
+      <section class="panel">
+        <h2>Activity</h2>
+        <ul class="activity">
+          @for (e of activity(); track e.id) {
+            <li class="entry" [class.payment]="e.kind === 'payment'">
+              <div class="entry-main">
+                @if (e.kind === 'expense') {
+                  <p class="entry-title">{{ e.description }}</p>
+                  <p class="entry-meta">{{ ledger.nameOf(e.paidBy) }} paid, {{ describeSplit(e) }}</p>
+                } @else {
+                  <p class="entry-title">{{ ledger.nameOf(e.paidBy) }} paid {{ recipientOf(e) }}</p>
+                }
+                <p class="entry-meta">{{ e.createdAt | date: 'd MMM, h:mm a' }}</p>
+              </div>
+              <span class="entry-amount">{{ e.amount | money: ledger.currency() }}</span>
+              <button type="button" class="remove" [attr.aria-label]="'Delete ' + e.description" (click)="ledger.deleteEntry(e.id)">×</button>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</main>
+
+<footer class="wrap footer">
+  <p>Saved in this browser only.</p>
+  @if (ledger.people().length) {
+    <button type="button" class="link" (click)="clearAll()">Clear all data</button>
+  }
+</footer>
+</div>

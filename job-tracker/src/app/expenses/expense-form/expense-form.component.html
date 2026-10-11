@@ -1,0 +1,84 @@
+<form class="panel expense-form" (ngSubmit)="submit()" novalidate>
+  <h2>Add an expense</h2>
+
+  @if (ledger.people().length < 2) {
+    <p class="hint">Add at least two people to start splitting costs.</p>
+  } @else {
+    <div class="field-row">
+      <label class="field grow">
+        <span>What was it for?</span>
+        <input name="description" [(ngModel)]="description" placeholder="Dinner at Fisherman's Wharf" maxlength="80" />
+      </label>
+      <label class="field amount-field">
+        <span>Amount</span>
+        <input name="amount" type="number" inputmode="decimal" min="0" step="0.01" [(ngModel)]="amount" placeholder="0.00" />
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Paid by</span>
+      <select name="paidBy" [(ngModel)]="paidBy">
+        <option value="" disabled>Choose who paid</option>
+        @for (p of ledger.people(); track p.id) {
+          <option [value]="p.id">{{ p.name }}</option>
+        }
+      </select>
+    </label>
+
+    <fieldset class="split-mode">
+      <legend>Split</legend>
+      <label class="split-option">
+        <input type="radio" name="mode" value="equal" [(ngModel)]="mode" />
+        <span>Equally</span>
+      </label>
+      <label class="split-option">
+        <input type="radio" name="mode" value="exact" [(ngModel)]="mode" />
+        <span>By exact amounts</span>
+      </label>
+    </fieldset>
+
+    <ul class="share-list">
+      @for (p of ledger.people(); track p.id) {
+        <li>
+          @if (mode === 'equal') {
+            <label class="check">
+              <input type="checkbox" [checked]="!excluded.has(p.id)" (change)="toggle(p.id)" />
+              <span>{{ p.name }}</span>
+            </label>
+          } @else {
+            <label class="exact-row">
+              <span>{{ p.name }}</span>
+              <input
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                [name]="'exact-' + p.id"
+                [(ngModel)]="exact[p.id]"
+              />
+            </label>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (mode === 'exact' && total > 0) {
+      <p class="hint" [class.ok]="exactRemaining === 0">
+        @if (exactRemaining === 0) {
+          Shares add up.
+        } @else if (exactRemaining > 0) {
+          {{ exactRemaining | money: ledger.currency() }} left to assign
+        } @else {
+          {{ -exactRemaining | money: ledger.currency() }} over the total
+        }
+      </p>
+    }
+
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    <button type="submit" class="primary">Add expense</button>
+  }
+</form>
